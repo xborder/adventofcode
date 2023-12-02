@@ -1,22 +1,8 @@
-fn day1() {
-    let input = std::fs::read_to_string("./1.txt").expect("failed to read file");
-
-    let sum: u32 = input
-        .lines()
-        .map(|s| {
-            let numbers = s
-                .chars()
-                .filter_map(|c| c.to_digit(10))
-                .collect::<Vec<u32>>();
-            let first = *numbers.first().unwrap_or_else(|| &0);
-            let last = *numbers.last().unwrap_or_else(|| &0);
-            10 * first + last
-        })
-        .sum();
-
-    println!("{}", sum);
-}
-
+const INPUT: &str = include_str!("./1.txt");
+const NUMBERS: [&str; 9] = ["1", "2", "3", "4", "5", "6", "7", "8", "9"];
+const NUMBERS_TXT: [&str; 9] = [
+    "one", "two", "three", "four", "five", "six", "seven", "eight", "nine",
+];
 fn text_to_digit(text: &str) -> Option<u32> {
     match text {
         "1" | "one" => Some(1),
@@ -32,36 +18,63 @@ fn text_to_digit(text: &str) -> Option<u32> {
     }
 }
 
-fn day2() {
-    let text_numbers = vec![
-        "1", "2", "3", "4", "5", "6", "7", "8", "9", "one", "two", "three", "four", "five", "six",
-        "seven", "eight", "nine",
-    ];
-    let input = std::fs::read_to_string("./1.txt").expect("failed to read file");
-    let sum: u32 = input
-        .lines()
-        .map(|s| {
-            let mut pos = text_numbers
-                .iter()
-                .filter_map(|tn| {
-                    let pos = s.match_indices(tn);
-                    Some(
-                        pos.filter_map(|(i, _)| Some((text_to_digit(tn).unwrap(), i)))
-                            .collect::<Vec<(u32, usize)>>(),
-                    )
-                })
-                .flatten()
+fn find_pos(line: &str, numbers: &Vec<&str>) -> u32 {
+    let mut pos = numbers
+        .iter()
+        .filter_map(|tn| {
+            let pos = line
+                .match_indices(tn)
+                .filter_map(|(i, _)| Some((text_to_digit(tn).unwrap(), i)))
                 .collect::<Vec<(u32, usize)>>();
-            pos.sort_by(|(_, p1), (_, p2)| p1.cmp(p2));
-            let first = *pos.first().and_then(|(n, _)| Some(n)).unwrap_or_else(|| &0);
-            let last = *pos.last().and_then(|(n, _)| Some(n)).unwrap_or_else(|| &0);
-            10 * first + last
+            Some(pos)
         })
-        .sum();
-    println!("{}", sum);
+        .flatten()
+        .collect::<Vec<(u32, usize)>>();
+
+    pos.sort_by(|(_, p1), (_, p2)| p1.cmp(p2));
+
+    let first = *pos.first().and_then(|(n, _)| Some(n)).unwrap_or_else(|| &0);
+    let last = *pos.last().and_then(|(n, _)| Some(n)).unwrap_or_else(|| &0);
+    10 * first + last
+}
+
+fn calibration(input: &str, numbers: Vec<&str>) -> u32 {
+    input.lines().map(|s| find_pos(s, &numbers)).sum()
 }
 
 fn main() {
-    day1();
-    day2();
+    println!("part 1: {}", calibration(INPUT, NUMBERS.to_vec()));
+    println!(
+        "part 2: {}",
+        calibration(INPUT, [&NUMBERS[..], &NUMBERS_TXT[..]].concat())
+    );
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn part1() {
+        let input = "1abc2
+pqr3stu8vwx
+a1b2c3d4e5f
+treb7uchet";
+        assert_eq!(calibration(input, NUMBERS.to_vec()), 142);
+    }
+
+    #[test]
+    fn part2() {
+        let input = "two1nine
+eightwothree
+abcone2threexyz
+xtwone3four
+4nineeightseven2
+zoneight234
+7pqrstsixteen";
+        assert_eq!(
+            calibration(input, [&NUMBERS[..], &NUMBERS_TXT[..]].concat()),
+            281
+        );
+    }
 }
